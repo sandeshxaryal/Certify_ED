@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+bun.lockb
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Generated files
+uploads/*.pdf
+assets/temp_*
+assets/*.png
+assets/*.jpg
+*.pid
+server.pid
+
+# Test files
+test-*.js
+test-*.pdf
+*-test.js
+
+# Temporary files
+*.tmp
+*.temp
+temp_*
+
+# Build artifacts
+build/
+dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation (keep only essential)
+SUCCESS.md
+TEST_RESULTS.md
+PROOF_OF_NETWORK_FLEXIBILITY.md
+
+# Migration scripts (temporary)
+migrate-*.js

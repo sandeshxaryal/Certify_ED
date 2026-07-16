@@ -1,0 +1,58 @@
+{
+  "name": "certifyed-backend",
+  "version": "1.0.0",
+  "description": "CertifyED - Blockchain Certificate Verification Platform",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0 <21.0.0"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "~/.nvm/versions/node/v20.19.4/bin/nodemon src/index.js --host",
+    "setup": "node scripts/setup.js",
+    "compile": "truffle compile",
+    "migrate:local": "truffle migrate --network development",
+    "migrate:sepolia": "truffle migrate --network sepolia",
+    "migrate:mumbai": "truffle migrate --network mumbai",
+    "migrate:polygon": "truffle migrate --network polygon",
+    "migrate:reset": "truffle migrate --network development --reset",
+    "test": "truffle test",
+    "console:local": "truffle console --network development",
+    "console:sepolia": "truffle console --network sepolia",
+    "console:mumbai": "truffle console --network mumbai"
+  },
+  "author": "Team Phoenix",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.3"
+  },
+  "dependencies": {
+    "@pinata/sdk": "^2.1.0",
+    "@truffle/hdwallet-provider": "^2.1.15",
+    "axios": "^1.8.2",
+    "bcrypt": "^5.1.1",
+    "blob-stream": "^0.1.3",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.4.7",
+    "ethers": "^6.13.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "form-data": "^4.0.2",
+    "handlebars": "^4.7.8",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "multiformats": "^13.3.2",
+    "nodemailer": "^6.10.1",
+    "pdfkit": "^0.16.0",
+    "pdfreader": "^3.0.7",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1",
+    "uuid": "^11.1.0",
+    "web3": "^4.16.0"
+  }
+}

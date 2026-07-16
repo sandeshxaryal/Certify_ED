@@ -1,0 +1,5 @@
+FROM node:16
+WORKDIR /app
+RUN npm install -g ganache-cli
+# Run ganache-cli on all interfaces with persistent storage to /app/db
+CMD ["ganache-cli", "-h", "0.0.0.0", "--db", "/app/db"]

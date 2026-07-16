@@ -1,0 +1,61 @@
+# version: "3.8"
+
+services:
+  # Ganache - Local Ethereum blockchain
+  ganache:
+    image: trufflesuite/ganache:latest
+    container_name: ganache
+    command:
+      - --wallet.deterministic
+      - --chain.hardfork=london
+      - --networkId=5777
+      - --host=0.0.0.0
+      - --port=8545
+      - --database.dbPath=/app/db
+    ports:
+      - "8545:8545"
+    volumes:
+      - blockchain_data:/app/db
+    networks:
+      - certifyed-net
+    restart: unless-stopped
+
+  # MongoDB - Database
+  mongodb:
+    image: mongo:7.0
+    container_name: certifyed-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=certifyed
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - certifyed-net
+    restart: unless-stopped
+
+  # Truffle - Smart contract deployment (optional)
+  truffle:
+    build:
+      context: .
+      dockerfile: Dockerfile.truffle
+    container_name: truffle
+    environment:
+      - PROVIDER_URL=http://ganache:8545
+    depends_on:
+      - ganache
+    volumes:
+      - ./build/contracts:/app/build/contracts
+      - blockchain_data:/app/db
+    networks:
+      - certifyed-net
+    profiles:
+      - deploy
+
+volumes:
+  blockchain_data:
+  mongodb_data:
+
+networks:
+  certifyed-net:
+    driver: bridge

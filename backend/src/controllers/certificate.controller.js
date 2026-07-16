@@ -1449,6 +1449,19 @@ export const getOrgCertificates = async (req, res) => {
   const institutionName = req.params.institutionName || req.params.orgName;
   const limit = parseInt(req.query.limit) || 10;
 
+  // An institute should only be able to list its own certificates, not any
+  // institution's, by swapping the URL param. (Admins, once an ADMIN role
+  // exists, would be exempt from this check.)
+  if (req.user?.role !== 'ADMIN' &&
+      req.user?.institutionName?.trim().toLowerCase() !== institutionName?.trim().toLowerCase()) {
+    return res.status(403).json({
+      success: false,
+      status: 'ERROR',
+      code: 'FORBIDDEN',
+      message: 'You are not authorized to view another institution\'s certificates'
+    });
+  }
+
   try {
     const query = {
       $or: [
@@ -1623,6 +1636,7 @@ export const serveCertificatePDF = async (req, res) => {
 };
 
 // Get certificates by recipient email
+// Get certificates by recipient email
 export const getCertificatesByEmail = async (req, res) => {
   try {
     const { email } = req.params;
@@ -1649,8 +1663,36 @@ export const getCertificatesByEmail = async (req, res) => {
       }, 'No certificates found for this email'));
     }
 
-    const formattedCertificates = certificates
-      .filter(cert => !cert.revoked)
+    // Cross-check against the blockchain before trusting the DB record.
+    // A certificate row can outlive its on-chain record (e.g. a dev-chain
+    // reset, or the contract being redeployed), and without this check
+    // those stale rows would be returned here as if they were still valid.
+    let contractInstance = null;
+    try {
+      contractInstance = getContract();
+    } catch (e) {
+      console.warn(`[${requestId}] Blockchain contract unavailable, skipping on-chain existence check:`, e.message);
+    }
+
+    const candidates = certificates.filter(cert => !cert.revoked && cert.status !== 'FAILED');
+
+    const existenceChecks = contractInstance
+      ? await Promise.all(candidates.map(async (cert) => {
+          try {
+            const exists = await contractInstance.methods.isVerified(cert.certificateId).call();
+            return { cert, exists };
+          } catch (chainErr) {
+            console.warn(`[${requestId}] On-chain check failed for ${cert.certificateId}, excluding from results:`, chainErr.message);
+            return { cert, exists: false };
+          }
+        }))
+      : candidates.map(cert => ({ cert, exists: true })); // if the chain is unreachable, fall back to DB-only rather than hiding everything
+
+    const liveCertificates = existenceChecks
+      .filter(({ exists }) => exists)
+      .map(({ cert }) => cert);
+
+    const formattedCertificates = liveCertificates
       .map(cert => ({
         certificateId: cert.certificateId,
         verificationCode: cert.verificationCode,

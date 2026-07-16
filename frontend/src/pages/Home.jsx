@@ -49,10 +49,6 @@ export default function Home() {
       <div className="bg-gradient-to-r from-gray-950 via-emerald-950 to-green-900 py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-white/10 border border-white/10 text-emerald-300 text-sm mb-5 backdrop-blur-sm">
-              Blockchain Powered Certification
-            </div>
-
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
               One Stop Solution for
               <span className="text-emerald-400"> Certification & Verification</span>

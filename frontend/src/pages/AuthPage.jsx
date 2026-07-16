@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
-import { FiUser, FiMail, FiLock, FiUsers, FiExternalLink, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiUsers, FiExternalLink, FiEye, FiEyeOff, FiAlertCircle, FiCheckCircle, FiX } from 'react-icons/fi';
 
 export default function AuthPage() {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -21,7 +22,78 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  /* ── forgot password state ──────────────────────────────────── */
+  const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
+  const [forgotMode, setForgotMode] = useState(false);
+  const [fpStep, setFpStep] = useState('request'); // request | otp | done
+  const [fpEmail, setFpEmail] = useState('');
+  const [fpOtp, setFpOtp] = useState('');
+  const [fpNewPassword, setFpNewPassword] = useState('');
+  const [fpConfirmPassword, setFpConfirmPassword] = useState('');
+  const [fpShowNew, setFpShowNew] = useState(false);
+  const [fpShowConfirm, setFpShowConfirm] = useState(false);
+  const [fpError, setFpError] = useState('');
+  const [fpLoading, setFpLoading] = useState(false);
+
   useEffect(() => { setError(''); }, [isRegistering]);
+
+  const openForgotPassword = () => {
+    setForgotMode(true);
+    setFpStep('request');
+    setFpEmail(email || '');
+    setFpOtp(''); setFpNewPassword(''); setFpConfirmPassword('');
+    setFpError('');
+  };
+
+  const closeForgotPassword = () => {
+    setForgotMode(false);
+    setFpStep('request');
+    setFpEmail(''); setFpOtp(''); setFpNewPassword(''); setFpConfirmPassword('');
+    setFpError('');
+  };
+
+  const handleSendForgotOtp = async (e) => {
+    e.preventDefault();
+    if (!fpEmail) { setFpError('Please enter your email address'); return; }
+    setFpLoading(true);
+    setFpError('');
+    try {
+      const res = await axios.post(`${apiUrl}/auth/send-reset-otp`, { email: fpEmail });
+      if (res.data?.success) {
+        setFpStep('otp');
+      } else {
+        setFpError(res.data?.message || 'Failed to send code');
+      }
+    } catch (err) {
+      setFpError(err.response?.data?.message || 'Failed to send code');
+    } finally {
+      setFpLoading(false);
+    }
+  };
+
+  const handleForgotResetPassword = async (e) => {
+    e.preventDefault();
+    if (fpNewPassword !== fpConfirmPassword) { setFpError('Passwords do not match'); return; }
+    if (fpNewPassword.length < 6) { setFpError('Password must be at least 6 characters'); return; }
+    setFpLoading(true);
+    setFpError('');
+    try {
+      const res = await axios.post(`${apiUrl}/auth/reset-password`, {
+        email: fpEmail,
+        otp: fpOtp,
+        newPassword: fpNewPassword
+      });
+      if (res.data?.success) {
+        setFpStep('done');
+      } else {
+        setFpError(res.data?.message || 'Failed to reset password');
+      }
+    } catch (err) {
+      setFpError(err.response?.data?.message || 'Invalid or expired code');
+    } finally {
+      setFpLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,6 +145,159 @@ export default function AuthPage() {
   };
 
   const inputClass = "w-full pl-9 pr-4 py-2.5 bg-white border border-stone-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:outline-none transition-all";
+
+  if (forgotMode) {
+    return (
+      <div className="min-h-screen flex justify-center items-center bg-gradient-to-r from-gray-950 via-emerald-950 to-green-900">
+        <div className="w-full max-w-md mx-4">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="p-8">
+              {fpStep === 'request' && (
+                <>
+                  <h2 className="text-lg font-bold text-stone-900 mb-2">Reset your password</h2>
+                  <p className="text-sm text-stone-500 mb-6">
+                    Enter the email address associated with your account and we'll send you a verification code.
+                  </p>
+
+                  {fpError && (
+                    <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+                      <FiAlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      <span>{fpError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleSendForgotOtp} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wide">Email Address</label>
+                      <div className="relative">
+                        <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                        <input
+                          type="email"
+                          autoComplete="email"
+                          className={inputClass}
+                          value={fpEmail}
+                          onChange={e => setFpEmail(e.target.value)}
+                          required
+                          autoFocus
+                        />
+                      </div>
+                    </div>
+
+                    <button type="submit" disabled={fpLoading}
+                      className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      {fpLoading ? 'Sending…' : 'Send verification code'}
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {fpStep === 'otp' && (
+                <>
+                  <h2 className="text-lg font-bold text-stone-900 mb-2">Enter code & new password</h2>
+                  <p className="text-sm text-stone-500 mb-6">
+                    A 6-digit code was sent to <strong>{fpEmail}</strong>. Enter it below along with your new password.
+                  </p>
+
+                  {fpError && (
+                    <div className="mb-5 flex items-start gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+                      <FiAlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                      <span>{fpError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleForgotResetPassword} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wide">Verification Code</label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        className="w-full px-4 py-3 bg-white border border-stone-300 text-2xl font-bold tracking-widest text-center focus:ring-2 focus:ring-emerald-500 focus:border-transparent focus:outline-none transition-all"
+                        value={fpOtp}
+                        onChange={e => setFpOtp(e.target.value.replace(/\D/g, ''))}
+                        placeholder="······"
+                        required
+                        autoFocus
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wide">New Password</label>
+                      <div className="relative">
+                        <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                        <input
+                          type={fpShowNew ? 'text' : 'password'}
+                          className={inputClass}
+                          value={fpNewPassword}
+                          onChange={e => setFpNewPassword(e.target.value)}
+                          required
+                        />
+                        <button type="button" onClick={() => setFpShowNew(p => !p)} tabIndex={-1}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-stone-400 hover:text-stone-600">
+                          {fpShowNew ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wide">Confirm New Password</label>
+                      <div className="relative">
+                        <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
+                        <input
+                          type={fpShowConfirm ? 'text' : 'password'}
+                          className={inputClass}
+                          value={fpConfirmPassword}
+                          onChange={e => setFpConfirmPassword(e.target.value)}
+                          required
+                        />
+                        <button type="button" onClick={() => setFpShowConfirm(p => !p)} tabIndex={-1}
+                          className="absolute inset-y-0 right-0 flex items-center px-3 text-stone-400 hover:text-stone-600">
+                          {fpShowConfirm ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <button type="submit" disabled={fpLoading || fpOtp.length !== 6}
+                      className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                      {fpLoading ? 'Updating…' : 'Update Password'}
+                    </button>
+                  </form>
+
+                  <div className="mt-4 text-center">
+                    <button type="button" onClick={() => { setFpStep('request'); setFpOtp(''); setFpError(''); }}
+                      className="text-sm text-stone-500 hover:text-stone-700 transition-colors">
+                      ← Use a different email
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {fpStep === 'done' && (
+                <>
+                  <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 text-sm mb-6">
+                    <FiCheckCircle className="w-4 h-4 shrink-0" />
+                    <span>Your password has been updated successfully.</span>
+                  </div>
+                  <button type="button" onClick={closeForgotPassword}
+                    className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-600 text-white text-sm font-semibold transition-colors">
+                    Back to sign in
+                  </button>
+                </>
+              )}
+
+              {fpStep !== 'done' && (
+                <div className="mt-4 text-center">
+                  <button type="button" onClick={closeForgotPassword}
+                    className="text-sm text-stone-500 hover:text-stone-700 transition-colors inline-flex items-center gap-1">
+                    <FiX className="w-3.5 h-3.5" /> Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (otpMode) {
     return (
@@ -177,6 +402,13 @@ export default function AuthPage() {
                   </button>
                 </div>
                 {isRegistering && <p className="mt-1.5 text-xs text-stone-400">Minimum 8 characters with at least 1 letter and 1 number</p>}
+                {!isRegistering && (
+                  <div className="mt-1.5 text-right">
+                    <button type="button" onClick={openForgotPassword} className="text-xs text-emerald-700 hover:text-emerald-600 font-medium transition-colors">
+                      Forgot password?
+                    </button>
+                  </div>
+                )}
               </div>
 
               {isRegistering && (

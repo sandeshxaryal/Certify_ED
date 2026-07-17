@@ -8,8 +8,8 @@
     "node": ">=20.0.0 <21.0.0"
   },
   "scripts": {
-    "start": "node src/main.js",
-    "dev": "~/.nvm/versions/node/v20.19.4/bin/nodemon src/main.js --host",
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js --host",
     "setup": "node scripts/setup.js",
     "compile": "truffle compile",
     "migrate:local": "truffle migrate --network development",

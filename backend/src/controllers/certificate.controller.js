@@ -146,29 +146,11 @@ const generateVerificationShortCode = () => {
   }
 };
 
-const createInstitutionalSignature = (data, privateKey) => {
-  console.log('[Signature] Creating institutional signature for certificate');
-  if (!privateKey) {
-    console.error('[Signature] Missing private key');
-    throw new Error('Institution private key is required for signing');
-  }
-  try {
-    const dataString = JSON.stringify(data, Object.keys(data).sort());
-    console.log(`[Signature] Data to sign (truncated): ${dataString.substring(0, 100)}...`);
-    const sign = crypto.createSign('SHA256');
-    sign.update(dataString);
-    sign.end();
-    const signature = sign.sign(privateKey, 'base64');
-    if (!signature || signature.length < 20) {
-      throw new Error('Generated signature is invalid or too short');
-    }
-    console.log(`[Signature] Signature created successfully (length: ${signature.length})`);
-    return signature;
-  } catch (error) {
-    console.error('[Signature] Error creating signature:', error);
-    throw new Error(`Signature creation failed: ${error.message}`);
-  }
-};
+// NOTE: an unused `createInstitutionalSignature(data, privateKey)` helper used to live here,
+// taking a raw private key directly and never being called. Removed as part of the private-key
+// encryption-at-rest fix so nothing in this file can be wired up to sign with a raw key again —
+// all signing goes through `signingInstitute.signData()` on the User model, which decrypts
+// internally and never returns the plaintext key.
 
 // Certificate Generation and Upload
 export const generateCertificate = async (req, res) => {
@@ -1473,8 +1455,12 @@ export const getCertificateStats = async (req, res) => {
         $group: {
           _id: null,
           total: { $sum: 1 },
-          internal: { $sum: { $cond: [{ $certificateId: { $exists: true } }, 1, 0] } },
-          external: { $sum: { $cond: [{ $cid: { $exists: true } }, 1, 0] } },
+          // $exists is a query-language operator; it isn't valid inside an aggregation
+          // $cond expression, so this threw (or silently misbehaved depending on Mongo
+          // version) instead of counting anything. $ifNull correctly treats a missing/null
+          // field as "not present".
+          internal: { $sum: { $cond: [{ $ne: [{ $ifNull: ["$certificateId", null] }, null] }, 1, 0] } },
+          external: { $sum: { $cond: [{ $ne: [{ $ifNull: ["$cid", null] }, null] }, 1, 0] } },
           organizations: { $addToSet: "$orgName" }
         }
       },
@@ -1885,6 +1871,5 @@ export const unrevokeCertificate = async (req, res) => {
 export const helpers = {
   generateCertificateHash,
   blockchainErrorHandler,
-  generateVerificationShortCode,
-  createInstitutionalSignature
+  generateVerificationShortCode
 };

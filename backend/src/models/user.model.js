@@ -2,6 +2,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken'; // Added missing JWT import
+import { decryptSecret } from '../utils/keyEncryption.js';
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -76,6 +77,10 @@ const UserSchema = new mongoose.Schema({
   verificationTokenExpiry: { type: Date },
   otp: { type: String },
   otpExpiry: { type: Date },
+  // Holds the new address during the two-step email-change flow (see
+  // requestEmailChange/confirmEmailChange in user.controller.js) — `email`
+  // itself is never written until the new address is verified via OTP.
+  pendingEmail: { type: String, lowercase: true, trim: true },
   
   refreshToken: String,
   status: {
@@ -214,7 +219,10 @@ UserSchema.methods = {
 
     // Import the cryptoUtils dynamically to avoid circular dependencies
     const { createDigitalSignature } = await import('../utils/cryptoUtils.js');
-    return createDigitalSignature(data, this.privateKey);
+    // Decrypted only in this local variable, for the duration of signing —
+    // never re-assigned onto `this` or persisted.
+    const plaintextKey = decryptSecret(this.privateKey);
+    return createDigitalSignature(data, plaintextKey);
   }
 };
 

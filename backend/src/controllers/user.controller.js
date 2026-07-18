@@ -3,6 +3,7 @@ import Certificate from '../models/certificate.model.js';
 import { successResponse } from '../utils/responseUtils.js';
 import { errorResponse, ErrorCodes } from '../utils/errorUtils.js';
 import { generateKeyPair, deriveWalletAddress } from '../utils/cryptoUtils.js';
+import { encryptSecret } from '../utils/keyEncryption.js';
 import mongoose from 'mongoose';
 
 /**
@@ -33,7 +34,7 @@ export const getUserProfile = async (req, res) => {
 
           // Update the user with the new keys
           user.publicKey = publicKey;
-          user.privateKey = privateKey;
+          user.privateKey = encryptSecret(privateKey);
           user.walletAddress = walletAddress;
           needsSave = true;
         } catch (error) {
@@ -88,6 +89,21 @@ export const updateUserProfile = async (req, res) => {
       return res.status(statusCode).json(response);
     }
 
+    // SECURITY: email is intentionally NOT accepted here. This endpoint used to let an
+    // authenticated user set `email` directly with no re-verification — since the admin
+    // allowlist (middlewares/admin.middleware.js) grants admin rights purely by matching
+    // req.user.email against ADMIN_EMAILS, that meant any institute could PATCH its own
+    // email to an address in the allowlist and become an admin on its very next request.
+    // Email changes now go through requestEmailChange / confirmEmailChange below, which
+    // require proving control of the *new* address via a one-time code before it's applied.
+    if (email) {
+      const { response, statusCode } = errorResponse(
+        'INVALID_INPUT',
+        'Email cannot be changed here. Use /api/users/email-change/request to change your email.'
+      );
+      return res.status(statusCode).json(response);
+    }
+
     // Get user to check role
     const user = await User.findById(userId);
     if (!user) {
@@ -105,7 +121,6 @@ export const updateUserProfile = async (req, res) => {
         console.log(`[updateUserProfile] Updating institutionName to: ${name}`);
       }
     }
-    if (email) updateData.email = email;
 
     // Update user and return updated document
     const updatedUser = await User.findByIdAndUpdate(
@@ -123,6 +138,102 @@ export const updateUserProfile = async (req, res) => {
   } catch (error) {
     console.error('Error updating user profile:', error);
     const { response, statusCode } = errorResponse('INTERNAL_ERROR', 'Failed to update profile');
+    return res.status(statusCode).json(response);
+  }
+};
+
+/**
+ * Step 1 of email change: send a one-time code to the NEW address to prove
+ * the user actually controls it before anything in the DB changes.
+ */
+export const requestEmailChange = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { newEmail } = req.body;
+
+    if (!newEmail || !/\S+@\S+\.\S+/.test(newEmail)) {
+      const { response, statusCode } = errorResponse('INVALID_INPUT', 'A valid newEmail is required');
+      return res.status(statusCode).json(response);
+    }
+
+    const normalizedEmail = newEmail.trim().toLowerCase();
+
+    const existing = await User.findOne({ email: normalizedEmail });
+    if (existing) {
+      const { response, statusCode } = errorResponse('DUPLICATE_RESOURCE', 'Email already in use');
+      return res.status(statusCode).json(response);
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      const { response, statusCode } = errorResponse('USER_NOT_FOUND', 'User not found');
+      return res.status(statusCode).json(response);
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.pendingEmail = normalizedEmail;
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+    await user.save();
+
+    const { sendOtpEmail } = await import('../utils/emailUtils.js');
+    await sendOtpEmail(normalizedEmail, user.name, otp);
+
+    return res.json(successResponse(
+      { newEmail: normalizedEmail },
+      'Verification code sent to the new email address'
+    ));
+  } catch (error) {
+    console.error('Error requesting email change:', error);
+    const { response, statusCode } = errorResponse('INTERNAL_ERROR', 'Failed to start email change');
+    return res.status(statusCode).json(response);
+  }
+};
+
+/**
+ * Step 2 of email change: apply the change only after the code sent to the
+ * new address is confirmed.
+ */
+export const confirmEmailChange = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { otp } = req.body;
+
+    if (!otp) {
+      const { response, statusCode } = errorResponse('INVALID_INPUT', 'Verification code is required');
+      return res.status(statusCode).json(response);
+    }
+
+    const user = await User.findById(userId).select('+otp +otpExpiry');
+    if (!user || !user.pendingEmail) {
+      const { response, statusCode } = errorResponse('INVALID_INPUT', 'No pending email change');
+      return res.status(statusCode).json(response);
+    }
+
+    if (!user.otp || user.otp !== otp || !user.otpExpiry || user.otpExpiry < new Date()) {
+      const { response, statusCode } = errorResponse('INVALID_OTP', 'Invalid or expired verification code');
+      return res.status(statusCode).json(response);
+    }
+
+    const stillFree = await User.findOne({ email: user.pendingEmail, _id: { $ne: user._id } });
+    if (stillFree) {
+      const { response, statusCode } = errorResponse('DUPLICATE_RESOURCE', 'Email already in use');
+      return res.status(statusCode).json(response);
+    }
+
+    user.email = user.pendingEmail;
+    user.pendingEmail = undefined;
+    user.otp = undefined;
+    user.otpExpiry = undefined;
+    await user.save();
+
+    return res.json(successResponse(
+      { email: user.email },
+      'Email address updated successfully'
+    ));
+  } catch (error) {
+    console.error('Error confirming email change:', error);
+    const { response, statusCode } = errorResponse('INTERNAL_ERROR', 'Failed to confirm email change');
     return res.status(statusCode).json(response);
   }
 };

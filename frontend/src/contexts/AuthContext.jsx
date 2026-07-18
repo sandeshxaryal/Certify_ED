@@ -1,6 +1,5 @@
 // src/contexts/AuthContext.jsx
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -10,14 +9,26 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  // SECURITY: the access token now lives only in React state, never in
+  // localStorage. Previously both the access token and the long-lived
+  // refresh token were written to localStorage, which any XSS on the page
+  // can read in full — that turned a script-injection bug into full account
+  // takeover for as long as the refresh token was valid (7 days). The
+  // refresh token now lives in an httpOnly cookie the backend sets (see
+  // POST /api/auth/verify-otp and /api/auth/refresh), which JavaScript
+  // cannot read at all. The access token is still readable by XSS while it
+  // sits in memory, but it's short-lived and disappears on tab close/reload,
+  // which is the best you can do for a token JS needs to attach to requests.
+  const [token, setToken] = useState('');
   const navigate = useNavigate();
 
   const apiUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api`;
 
-  // Create axios instance with auth header
+  // Create axios instance with auth header. withCredentials is required so
+  // the httpOnly refreshToken cookie is sent on /auth/refresh and /auth/logout.
   const authAxios = axios.create({
     baseURL: apiUrl,
+    withCredentials: true,
     headers: {
       Authorization: token ? `Bearer ${token}` : '',
     },
@@ -28,51 +39,34 @@ export const AuthProvider = ({ children }) => {
     authAxios.defaults.headers.Authorization = token ? `Bearer ${token}` : '';
   }, [token]);
 
-  // Validate auth on mount
+  // On mount: try to silently restore a session from the httpOnly refresh
+  // cookie. This replaces the old "read token/userData back out of
+  // localStorage" restore path.
   useEffect(() => {
-    const validateAuth = async () => {
-      // First try to get saved user data
+    const restoreSession = async () => {
       try {
-        const storedUser = localStorage.getItem('userData');
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser);
-          console.log('Using stored user data:', parsedUser);
-          setUser(parsedUser);
-          setLoading(false);
-          return;
+        const response = await axios.post(
+          `${apiUrl}/auth/refresh`,
+          {},
+          { withCredentials: true }
+        );
+
+        if (response.data.success && response.data.data) {
+          const { user: userData, tokens } = response.data.data;
+          setUser(userData);
+          setToken(tokens.access);
         }
       } catch {
-        console.log('Error parsing stored user data');
+        // No valid refresh cookie (never logged in, expired, or logged out
+        // elsewhere) — this is a normal, expected case, not an error to show.
+        setUser(null);
+        setToken('');
+      } finally {
+        setLoading(false);
       }
-
-      // If no stored data, try to use token
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          console.log('Decoded token:', decoded);
-
-          // Token might not have all user fields, but should at least have ID and role
-          setUser({
-            id: decoded.id,
-            role: decoded.role
-          });
-
-          // If token is expired, logout
-          const currentTime = Date.now() / 1000;
-          if (decoded.exp < currentTime) {
-            console.log('Token expired, logging out');
-            logout();
-          }
-        } catch (err) {
-          console.error('Token validation failed:', err);
-          logout();
-        }
-      }
-
-      setLoading(false);
     };
 
-    validateAuth();
+    restoreSession();
   }, []);
 
   // Login function - fixed to match the API response structure
@@ -81,7 +75,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError('');
 
-      const response = await axios.post(`${apiUrl}/auth/login`, { email, password });
+      const response = await axios.post(`${apiUrl}/auth/login`, { email, password }, { withCredentials: true });
       console.log('Login response:', response.data);
 
       if (response.data.success && response.data.data) {
@@ -93,8 +87,6 @@ export const AuthProvider = ({ children }) => {
         }
 
         // Full login (shouldn't happen now but kept as fallback)
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        localStorage.setItem('token', data.tokens.access);
         setUser(data.user);
         setToken(data.tokens.access);
         return true;
@@ -140,7 +132,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError('');
 
-      const response = await axios.post(`${apiUrl}/auth/register`, { name, email, password, role });
+      const response = await axios.post(`${apiUrl}/auth/register`, { name, email, password, role }, { withCredentials: true });
       console.log('Register response:', response.data);
 
       if (response.data.success && response.data.data) {
@@ -151,8 +143,6 @@ export const AuthProvider = ({ children }) => {
           return { requiresOtp: true, email: data.email };
         }
 
-        localStorage.setItem('userData', JSON.stringify(data.user));
-        localStorage.setItem('token', data.tokens.access);
         setUser(data.user);
         setToken(data.tokens.access);
         return true;
@@ -198,19 +188,18 @@ export const AuthProvider = ({ children }) => {
 
   // Logout function
   const logout = useCallback(async () => {
-  // Write the logout activity log before clearing the token
-  if (token) {
+    // Write the logout activity log before clearing the token
+    if (token) {
       try {
         await axios.post(`${apiUrl}/auth/logout`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true, // needed so the server can clear the refreshToken cookie
         });
       } catch (e) {
         // Don't block logout if the request fails
         console.error('[logout] Could not log logout event:', e.message);
       }
     }
-    localStorage.removeItem('token');
-    localStorage.removeItem('userData');
     setUser(null);
     setToken('');
     navigate('/');
@@ -221,14 +210,12 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
       setError('');
 
-      const response = await axios.post(`${apiUrl}/auth/verify-otp`, { email, otp });
+      const response = await axios.post(`${apiUrl}/auth/verify-otp`, { email, otp }, { withCredentials: true });
       console.log('OTP verify response:', response.data);
 
       if (response.data.success && response.data.data) {
         const { user: userData, tokens } = response.data.data;
 
-        localStorage.setItem('userData', JSON.stringify(userData));
-        localStorage.setItem('token', tokens.access);
         setUser(userData);
         setToken(tokens.access);
         return true;
@@ -248,7 +235,7 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, []);
-  
+
   return (
     <AuthContext.Provider
       value={{

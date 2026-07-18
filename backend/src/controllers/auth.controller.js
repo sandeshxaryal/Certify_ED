@@ -5,6 +5,7 @@ import { successResponse } from '../utils/responseUtils.js';
 import { errorResponse, ErrorCodes } from '../utils/errorUtils.js';
 import crypto from 'crypto';
 import { generateKeyPair, deriveWalletAddress } from '../utils/cryptoUtils.js';
+import { encryptSecret } from '../utils/keyEncryption.js';
 import { sendVerificationEmail, sendOtpEmail } from '../utils/emailUtils.js';
 import logActivity from '../utils/logActivity.js';
 
@@ -50,7 +51,7 @@ export const register = async (req, res) => {
         const walletAddress = deriveWalletAddress(publicKey);
 
         userFields.publicKey = publicKey;
-        userFields.privateKey = privateKey;
+        userFields.privateKey = encryptSecret(privateKey);
         userFields.walletAddress = walletAddress;
         userFields.institutionName = name;
 
@@ -279,7 +280,13 @@ export const login = async (req, res) => {
 };
 
 export const refreshToken = async (req, res) => {
-  const { refreshToken } = req.body;
+  // Read from the httpOnly cookie set at login (see verifyOtp), not the
+  // request body — a body-based refresh token has to be readable by frontend
+  // JS to be sent, which puts it back in the same XSS-exposed position this
+  // cookie was meant to get it out of. `req.body.refreshToken` is still
+  // accepted as a fallback for any non-browser API client that can't use
+  // cookies, but browser clients should never need it.
+  const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
   const requestId = crypto.randomBytes(4).toString('hex');
 
   try {
@@ -319,12 +326,27 @@ export const refreshToken = async (req, res) => {
 
     const newAccessToken = user.generateAuthToken();
     const newRefreshToken = user.generateRefreshToken();
+    user.refreshToken = newRefreshToken;
     await user.save();
 
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/api/auth',
+    });
+
     return res.status(200).json(successResponse({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        ...(user.walletAddress && { walletAddress: user.walletAddress })
+      },
       tokens: {
-        access: newAccessToken,
-        refresh: newRefreshToken
+        access: newAccessToken
       }
     }, 'Tokens refreshed successfully'));
 
@@ -434,11 +456,24 @@ export const verifyOtp = async (req, res) => {
 
     console.log(`[${requestId}] OTP verified for ${email}`);
 
+    // SECURITY: the refresh token used to go out in the JSON body, where the
+    // frontend put it (and the access token) into localStorage — readable by
+    // any XSS on the page, for the full 7-day refresh-token lifetime. It now
+    // goes out only as an httpOnly cookie, which JavaScript (malicious or
+    // otherwise) cannot read. The short-lived access token still goes in the
+    // body since the frontend needs it in memory for Authorization headers.
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // matches generateRefreshToken's 7d expiry
+      path: '/api/auth',
+    });
+
     return res.status(200).json(successResponse({
       user: userData,
       tokens: {
-        access: token,
-        refresh: refreshToken
+        access: token
       }
     }, 'Login successful'));
 

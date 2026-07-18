@@ -1,6 +1,6 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
-import { register, login, verifyEmail, verifyOtp, sendPasswordResetOtp, resetPasswordWithOtp } from '../controllers/auth.controller.js';
+import { register, login, verifyEmail, verifyOtp, sendPasswordResetOtp, resetPasswordWithOtp, refreshToken } from '../controllers/auth.controller.js';
 import authenticate from '../middlewares/auth.middleware.js';
 import ActivityLog from '../models/activityLog.model.js';
 
@@ -28,6 +28,13 @@ router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 router.get('/verify-email', verifyEmail);
 router.post('/verify-otp', authLimiter, verifyOtp);
+// NOTE: this endpoint existed in the controller but was never actually routed
+// before — the frontend had no way to silently renew a session, which is
+// also why the old code leaned on a long-lived token sitting in localStorage
+// instead. Now that the refresh token lives in an httpOnly cookie, this is
+// what the frontend calls (with credentials included) to get a new access
+// token without the user re-entering their password.
+router.post('/refresh', refreshToken);
 
 router.post('/logout', authenticate, async (req, res) => {
   try {
@@ -41,6 +48,7 @@ router.post('/logout', authenticate, async (req, res) => {
   } catch (e) {
     console.error('[logout] Failed to write activity log:', e.message);
   }
+  res.clearCookie('refreshToken', { path: '/api/auth' });
   res.json({ success: true });
 });
 

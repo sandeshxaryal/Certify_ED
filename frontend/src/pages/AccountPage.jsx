@@ -831,45 +831,6 @@ const AccountPage = () => {
           </div>
         </div>
 
-        {/* ══ CRYPTOGRAPHIC IDENTITY ═════════════════════════════════ */}
-        <div className="bg-white border border-gray-200 shadow-sm overflow-hidden">
-          <div className="flex items-center gap-2 px-6 py-4 border-b border-gray-100">
-            <div className="w-7 h-7 bg-emerald-50 flex items-center justify-center">
-              <FiShield className="w-3.5 h-3.5 text-emerald-600" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-gray-900">Cryptographic Identity</h2>
-              <p className="text-[11px] text-gray-400 mt-0.5">Used to digitally sign certificates you issue</p>
-            </div>
-          </div>
-
-          <div className="px-6 py-5 space-y-4">
-            <div>
-              <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-2">Wallet Address</p>
-              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 overflow-hidden pl-3 pr-1 py-1">
-                <span className="flex-1 font-mono text-xs text-gray-700 truncate py-1">
-                  {user.walletAddress || 'Not available'}
-                </span>
-                {user.walletAddress && (
-                  <CopyButton value={user.walletAddress} onCopied={() => handleCopied('Wallet address')} />
-                )}
-              </div>
-            </div>
-
-            <KeyBlock label="Public Key" value={user.publicKey} onCopied={handleCopied} />
-            <KeyBlock label="Private Key" value={user.privateKey} sensitive onCopied={handleCopied} />
-
-            {(!user.walletAddress || !user.publicKey || !user.privateKey) && (
-              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 px-4 py-3">
-                <FiAlertCircle className="shrink-0 w-4 h-4 mt-0.5 text-amber-500" />
-                <p className="text-xs text-amber-700">
-                  Some cryptographic keys are missing. They will be generated automatically on your next profile load.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
         {/* ══ ACCOUNT ACTIVITY ═══════════════════════════════════════ */}
         <ActivitySection
           activity={activity}

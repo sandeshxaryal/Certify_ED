@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { FiUpload, FiImage, FiCheck, FiX } from 'react-icons/fi';
-import axios from 'axios';
+import { useAuth } from '../contexts/AuthContext';
 
 /**
  * LogoUpload
@@ -10,6 +10,7 @@ import axios from 'axios';
  *   compact       – when true, renders inline row style (for embedding in AccountPage)
  */
 const LogoUpload = ({ currentLogo, onLogoUpdated, compact = false }) => {
+  const { authAxios } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview]     = useState(currentLogo);
   const [error, setError]         = useState('');
@@ -41,18 +42,15 @@ const LogoUpload = ({ currentLogo, onLogoUpdated, compact = false }) => {
       const formData = new FormData();
       formData.append('logo', file);
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-      const token   = localStorage.getItem('token');
-
-      const response = await axios.post(
-        `${API_URL}/api/users/profile/logo`,
+      // Was reading a token out of localStorage that no longer exists there
+      // (the access token now lives only in AuthContext's in-memory state —
+      // see AuthContext.jsx). authAxios already carries the current token
+      // and baseURL, and picks up a freshly-refreshed token automatically
+      // if AuthContext refreshes it in the background.
+      const response = await authAxios.post(
+        '/users/profile/logo',
         formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       );
 
       if (response.data.success) {

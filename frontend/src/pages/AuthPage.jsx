@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../contexts/AuthContext';
+import LogoUpload from '../components/LogoUpload';
 import { FiUser, FiMail, FiLock, FiUsers, FiExternalLink, FiEye, FiEyeOff, FiAlertCircle, FiCheckCircle, FiX } from 'react-icons/fi';
 
 export default function AuthPage() {
@@ -17,6 +18,7 @@ export default function AuthPage() {
   const [otpMode, setOtpMode] = useState(false);
   const [otpEmail, setOtpEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [showLogoOnboarding, setShowLogoOnboarding] = useState(false);
   const { login, register, verifyOtp, loading, error: authError } = useAuth();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -103,7 +105,14 @@ export default function AuthPage() {
       if (otpMode) {
         const success = await verifyOtp(otpEmail, otp);
         if (success) {
-          navigate('/');
+          // Fresh registrations get one extra beat to add a logo before landing
+          // on the dashboard — logins skip straight through, they already have
+          // whatever setup they had before.
+          if (isRegistering) {
+            setShowLogoOnboarding(true);
+          } else {
+            navigate('/');
+          }
         } else {
           setError(authError || 'Invalid or expired verification code. Please try again.');
         }
@@ -463,6 +472,34 @@ export default function AuthPage() {
             </div>
           </div>
         </div>
+
+        {/* ── Post-registration logo onboarding ──────────────────────
+            Shown once, right after a fresh institute account verifies its
+            OTP. Skippable — the logo can always be added later from the
+            Account page's Verification/Profile section. */}
+        {showLogoOnboarding && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl shadow-lg max-w-sm w-full p-6">
+              <h3 className="text-lg font-bold text-stone-900 mb-1">Add your institution's logo</h3>
+              <p className="text-sm text-stone-500 mb-5">
+                This logo will appear on every certificate you generate. You can skip this and add it anytime from your account settings.
+              </p>
+
+              <LogoUpload
+                compact
+                onLogoUpdated={() => navigate('/')}
+              />
+
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="w-full mt-5 text-center text-sm text-stone-500 hover:text-stone-700 transition-colors"
+              >
+                Skip for now
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

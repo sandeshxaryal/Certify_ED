@@ -51,7 +51,6 @@
     "nodemailer": "^6.10.1",
     "pdfkit": "^0.16.0",
     "pdfreader": "^3.0.7",
-    "qrcode": "^1.5.4",
     "socket.io": "^4.8.1",
     "uuid": "^11.1.0",
     "web3": "^4.16.0"

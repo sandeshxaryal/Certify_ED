@@ -1,6 +1,5 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
-import QRCode from 'qrcode';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import axios from 'axios';
@@ -14,19 +13,6 @@ const defaultLogoPath = path.join(assetsPath, 'default-logo.png');
 if (!fs.existsSync(assetsPath)) {
   fs.mkdirSync(assetsPath, { recursive: true });
 }
-
-const generateQRCodeDataURL = async (text) => {
-  try {
-    return await QRCode.toDataURL(text, {
-      errorCorrectionLevel: 'H',
-      margin: 1,
-      width: 200
-    });
-  } catch (error) {
-    console.error('Error generating QR code data URL:', error);
-    return null;
-  }
-};
 
 const downloadImageFromURL = async (url, outputPath) => {
   try {

@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   FiFileText,
   FiUpload,
-  FiExternalLink,
   FiCheckCircle,
-  FiBook,
   FiSearch
 } from 'react-icons/fi';
 import Header from '../components/Header';
@@ -17,41 +15,40 @@ export default function Home() {
     {
       icon: FiFileText,
       title: 'Generate',
-      description: 'Generate a certificate',
+      description: 'Create a new certificate',
       action: () => navigate('/generate'),
     },
     {
       icon: FiCheckCircle,
       title: 'Verify',
-      description: 'Check the authenticity of certificates',
+      description: 'Check authenticity',
       action: () => navigate('/verify'),
     },
     {
       icon: FiUpload,
       title: 'Custom Documents',
-      description: 'Upload and verify past/external documents',
+      description: 'Upload & verify past docs',
       action: () => navigate('/upload'),
     },
     {
       icon: FiSearch,
       title: 'Find Certificates',
-      description: 'Find certificates using email address',
+      description: 'Search by email',
       action: () => navigate('/find-certificates'),
     }
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-950 via-emerald-950 to-green-900">
       {/* Header */}
       {/* <Header /> */}
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-gray-950 via-emerald-950 to-green-900 py-16">
+      <div className="py-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-5 leading-tight">
-              One Stop Solution for
-              <span className="text-emerald-400"> Certification & Verification</span>
+              One Stop Solution for Certification & Verification
             </h1>
 
             <p className="text-lg text-gray-300 max-w-2xl mx-auto leading-relaxed">
@@ -62,41 +59,20 @@ export default function Home() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="flex-1 max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Main Actions */}
         <div className="mb-12">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-4">
             {mainActions.map((action, index) => (
-              <div
+              <button
                 key={index}
                 onClick={action.action}
-                className="group relative overflow-hidden border border-gray-200 bg-white rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-200"
+                className="aspect-square rounded-2xl flex flex-col items-center justify-center gap-2 bg-white text-emerald-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 px-4"
               >
-                {/* Glow */}
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
-                <div className="relative z-10">
-                  <div className="flex items-center mb-4">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center mr-4 transition-transform duration-300 group-hover:scale-110">
-                      <action.icon className="w-5 h-5 text-emerald-700" />
-                    </div>
-
-                    <h3 className="font-semibold text-gray-900 text-lg">
-                      {action.title}
-                    </h3>
-                  </div>
-
-                  <p className="text-sm text-gray-600 leading-relaxed mb-5">
-                    {action.description}
-                  </p>
-
-                  <button className="text-sm flex items-center font-medium text-emerald-700 group-hover:text-emerald-800 transition-colors">
-                    <span className="mr-2">Proceed</span>
-
-                    <FiExternalLink className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </button>
-                </div>
-              </div>
+                <action.icon className="w-7 h-7 text-emerald-700" />
+                <span className="text-sm font-semibold text-center text-emerald-800">{action.title}</span>
+                <span className="text-xs text-emerald-600 text-center leading-snug">{action.description}</span>
+              </button>
             ))}
           </div>
         </div>

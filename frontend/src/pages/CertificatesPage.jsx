@@ -46,7 +46,7 @@ const downloadCert = async (cert) => {
 
 /* ─── Toast ──────────────────────────────────────────────────────── */
 const Toast = ({ message, type, onClose }) => (
-  <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg text-sm border
+  <div className={`fixed top-5 right-5 z-50 flex items-center gap-2 px-4 py-2.5 shadow-lg text-sm border
     ${type === 'success' ? 'bg-white border-emerald-200 text-emerald-700' : 'bg-white border-red-200 text-red-700'}`}>
     {type === 'success'
       ? <FiCheckCircle className="w-4 h-4 shrink-0" />
@@ -59,15 +59,15 @@ const Toast = ({ message, type, onClose }) => (
 /* ─── Revoke Confirmation Dialog ─────────────────────────────────── */
 const RevokeDialog = ({ cert, onClose, onConfirm, revoking }) => (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-    <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+    <div className="bg-white shadow-xl w-full max-w-md">
       <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
+          <div className="w-8 h-8 bg-red-100 flex items-center justify-center">
             <FiSlash className="w-4 h-4 text-red-600" />
           </div>
           <h3 className="text-sm font-semibold text-stone-900">Revoke Certificate</h3>
         </div>
-        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-stone-100 transition-colors">
+        <button onClick={onClose} className="p-1.5 hover:bg-stone-100 transition-colors">
           <FiX className="w-4 h-4 text-stone-500" />
         </button>
       </div>
@@ -76,18 +76,18 @@ const RevokeDialog = ({ cert, onClose, onConfirm, revoking }) => (
           Are you sure you want to revoke this certificate? It will be marked as invalid and
           verification will be blocked. You can unrevoke it later.
         </p>
-        <div className="bg-stone-50 border border-stone-200 rounded-lg px-4 py-3 text-sm">
+        <div className="bg-stone-50 border border-stone-200 px-4 py-3 text-sm">
           <div className="font-semibold text-stone-900">{cert?.candidateName}</div>
           <div className="text-stone-500 text-xs mt-0.5">{cert?.courseName}</div>
           <div className="font-mono text-emerald-700 text-xs mt-1">{cert?.verificationCode || cert?.shortCode}</div>
         </div>
         <div className="flex gap-2 pt-1">
           <button onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-stone-300 text-stone-600 text-sm rounded-lg hover:bg-stone-50 transition-colors font-medium">
+            className="flex-1 px-4 py-2.5 border border-stone-300 text-stone-600 text-sm hover:bg-stone-50 transition-colors font-medium">
             Cancel
           </button>
           <button onClick={() => onConfirm(cert)} disabled={revoking}
-            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+            className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white text-sm transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2">
             {revoking
               ? <><svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Revoking…</>
               : <><FiSlash className="w-4 h-4" />Revoke Certificate</>}
@@ -106,13 +106,13 @@ const MailDialog = ({ cert, onClose, onSend, sending }) => {
   const handleSubmit = (e) => { e.preventDefault(); onSend(cert, email); };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
+      <div className="bg-white shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between px-5 py-4 border-b border-stone-100">
           <div>
             <h3 className="text-sm font-semibold text-stone-900">Send Certificate</h3>
             <p className="text-xs text-stone-400 mt-0.5">{cert?.candidateName} — {cert?.courseName}</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-stone-100 transition-colors">
+          <button onClick={onClose} className="p-1.5 hover:bg-stone-100 transition-colors">
             <FiX className="w-4 h-4 text-stone-500" />
           </button>
         </div>
@@ -120,7 +120,7 @@ const MailDialog = ({ cert, onClose, onSend, sending }) => {
           <div>
             <label className="block text-xs font-semibold text-stone-600 mb-1.5 uppercase tracking-wide">Recipient Email</label>
             <input ref={inputRef} type="email" value={email} onChange={e => setEmail(e.target.value)}
-              className="w-full px-3 py-2.5 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className="w-full px-3 py-2.5 border border-stone-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               placeholder="recipient@example.com" required />
             {cert?.recipientEmail && email !== cert.recipientEmail && (
               <button type="button" onClick={() => setEmail(cert.recipientEmail)}
@@ -131,11 +131,11 @@ const MailDialog = ({ cert, onClose, onSend, sending }) => {
           </div>
           <div className="flex gap-2 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 px-4 py-2.5 border border-stone-300 text-stone-600 text-sm rounded-lg hover:bg-stone-50 transition-colors font-medium">
+              className="flex-1 px-4 py-2.5 border border-stone-300 text-stone-600 text-sm hover:bg-stone-50 transition-colors font-medium">
               Cancel
             </button>
             <button type="submit" disabled={sending}
-              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded-lg transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white text-sm transition-colors font-medium disabled:opacity-50 flex items-center justify-center gap-2">
               {sending
                 ? <><svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Sending…</>
                 : <><FiMail className="w-4 h-4" />Send Certificate</>}
@@ -152,17 +152,17 @@ const ActionBtns = ({ cert, downloading, mailing, revoking, onDownload, onMail, 
   <div className="inline-flex items-center gap-1.5 justify-end">
     <button onClick={() => onDownload(cert)} disabled={downloading === cert.certificateId}
       title="Download PDF"
-      className="inline-flex items-center justify-center w-8 h-8 bg-emerald-700 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      className="inline-flex items-center justify-center w-8 h-8 bg-emerald-700 text-white hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       {downloading === cert.certificateId ? <Spinner small /> : <FiDownload className="w-3.5 h-3.5" />}
     </button>
     <button onClick={() => onMail(cert)} disabled={mailing === cert.certificateId}
       title="Send via email"
-      className="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      className="inline-flex items-center justify-center w-8 h-8 bg-blue-600 text-white hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       {mailing === cert.certificateId ? <Spinner small /> : <FiMail className="w-3.5 h-3.5" />}
     </button>
     <button onClick={() => onRevoke(cert)} disabled={revoking === cert.certificateId}
       title="Revoke certificate"
-      className="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+      className="inline-flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
       {revoking === cert.certificateId ? <Spinner small /> : <FiSlash className="w-3.5 h-3.5" />}
     </button>
   </div>
@@ -170,7 +170,7 @@ const ActionBtns = ({ cert, downloading, mailing, revoking, onDownload, onMail, 
 
 /* ─── Revoked row badge ──────────────────────────────────────────── */
 const RevokedBadge = () => (
-  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-600 text-xs font-semibold rounded-full">
+  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-600 text-xs font-semibold">
     <FiSlash className="w-3 h-3" /> Revoked
   </span>
 );
@@ -229,7 +229,7 @@ const GeneratedTable = ({ certs, downloading, mailing, revoking, onDownloadOne, 
                 {cert.revoked ? (
                   <button onClick={() => onUnrevoke(cert)} disabled={revoking === cert.certificateId}
                     title="Unrevoke certificate"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-200 text-stone-600 text-xs rounded-lg hover:bg-emerald-100 hover:text-emerald-700 transition-colors disabled:opacity-50 font-medium">
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-200 text-stone-600 text-xs hover:bg-emerald-100 hover:text-emerald-700 transition-colors disabled:opacity-50 font-medium">
                     {revoking === cert.certificateId ? <Spinner small /> : <FiRotateCcw className="w-3.5 h-3.5" />}
                     Unrevoke
                   </button>
@@ -293,7 +293,7 @@ const ExternalTable = ({ certs, downloading, mailing, revoking, onDownloadOne, o
                 {cert.revoked ? (
                   <button onClick={() => onUnrevoke(cert)} disabled={revoking === cert.certificateId}
                     title="Unrevoke"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-200 text-stone-600 text-xs rounded-lg hover:bg-emerald-100 hover:text-emerald-700 transition-colors disabled:opacity-50 font-medium">
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-200 text-stone-600 text-xs hover:bg-emerald-100 hover:text-emerald-700 transition-colors disabled:opacity-50 font-medium">
                     {revoking === cert.certificateId ? <Spinner small /> : <FiRotateCcw className="w-3.5 h-3.5" />}
                     Unrevoke
                   </button>
@@ -317,21 +317,21 @@ const Section = ({ title, badge, icon: Icon, accentClass, children, count, certs
       <div className="flex items-center gap-2">
         <Icon className={`w-4 h-4 ${accentClass}`} />
         <h2 className="text-base font-semibold text-stone-900">{title}</h2>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badge}`}>{count}</span>
+        <span className={`text-xs font-semibold px-2 py-0.5 ${badge}`}>{count}</span>
       </div>
       {count > 0 && (
         <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
           <button onClick={onDownloadAll} disabled={downloading === 'all'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 text-white text-xs rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-60 font-medium whitespace-nowrap">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-700 text-white text-xs hover:bg-emerald-600 transition-colors disabled:opacity-60 font-medium whitespace-nowrap">
             <FiDownload className="w-3.5 h-3.5" /> Download All (PDF)
           </button>
           <button onClick={onMailAll} disabled={mailing === 'all'}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-500 transition-colors disabled:opacity-60 font-medium whitespace-nowrap">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs hover:bg-blue-500 transition-colors disabled:opacity-60 font-medium whitespace-nowrap">
             <FiMail className="w-3.5 h-3.5" />
             {mailing === 'all' ? 'Sending…' : 'Mail All'}
           </button>
           <button onClick={onExportExcel}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-700 text-white text-xs rounded-lg hover:bg-stone-600 transition-colors font-medium whitespace-nowrap">
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-stone-700 text-white text-xs hover:bg-stone-600 transition-colors font-medium whitespace-nowrap">
             <FiDownload className="w-3.5 h-3.5" /> Export Excel
           </button>
         </div>
@@ -537,7 +537,7 @@ const CertificatesPage = () => {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-stone-900">All Certificates</h1>
           <button onClick={fetchCertificates} disabled={loading} title="Refresh"
-            className="p-2 border border-stone-300 rounded-lg hover:bg-stone-100 transition-colors">
+            className="p-2 border border-stone-300 hover:bg-stone-100 transition-colors">
             <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-emerald-600' : 'text-stone-600'}`} />
           </button>
         </div>
@@ -547,19 +547,19 @@ const CertificatesPage = () => {
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 w-4 h-4" />
             <input type="text" placeholder="Search by name, course, or ID…" value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-3 py-2.5 border border-stone-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+              className="w-full pl-9 pr-3 py-2.5 border border-stone-300 text-sm focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
           </div>
-          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-lg shrink-0">
+          <div className="flex items-center gap-1 bg-stone-100 p-1 shrink-0">
             {[
               { key: 'all',       label: 'All',       count: filtered.length },
               { key: 'generated', label: 'Generated', count: generated.length },
               { key: 'external',  label: 'External',  count: external.length },
             ].map(({ key, label, count }) => (
               <button key={key} onClick={() => setFilter(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors
                   ${filter === key ? 'bg-white text-emerald-700 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>
                 {label}
-                <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium
+                <span className={`text-xs px-1.5 py-0.5 font-medium
                   ${filter === key ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-200 text-stone-500'}`}>
                   {count}
                 </span>
@@ -581,7 +581,7 @@ const CertificatesPage = () => {
             </p>
             {filter === 'all' && (
               <Link to="/generate"
-                className="inline-flex items-center gap-2 bg-emerald-700 text-white text-sm rounded-lg px-4 py-2 hover:bg-emerald-600 transition-colors">
+                className="inline-flex items-center gap-2 bg-emerald-700 text-white text-sm px-4 py-2 hover:bg-emerald-600 transition-colors">
                 <FiPlus className="w-4 h-4" /> Create Certificate
               </Link>
             )}

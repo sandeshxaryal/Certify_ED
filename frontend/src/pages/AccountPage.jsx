@@ -211,7 +211,7 @@ const ActivitySection = ({ activity, loading, error, pagination, onLoadMore, onR
                 <div key={log._id} className="flex gap-3">
                   {/* timeline spine */}
                   <div className="flex flex-col items-center">
-                    <div className={`w-7 h-7 shrink-0 rounded-full border flex items-center justify-center ${meta.bg} ${meta.border} ${meta.color}`}>
+                    <div className={`w-7 h-7 shrink-0 border flex items-center justify-center ${meta.bg} ${meta.border} ${meta.color}`}>
                       <ActivityIcon type={log.type} />
                     </div>
                     {!isLast && <div className="w-px flex-1 bg-gray-100 my-1" />}
@@ -226,17 +226,17 @@ const ActivitySection = ({ activity, loading, error, pagination, onLoadMore, onR
                         {log.meta && (
                           <div className="flex flex-wrap gap-1.5 mt-1.5">
                             {log.meta.candidateName && (
-                              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5">
                                 {log.meta.candidateName}
                               </span>
                             )}
                             {log.meta.courseName && (
-                              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                              <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5">
                                 {log.meta.courseName}
                               </span>
                             )}
                             {(log.meta.verificationCode || log.meta.externalVerificationCode) && (
-                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-mono">
+                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 font-mono">
                                 #{log.meta.verificationCode || log.meta.externalVerificationCode}
                               </span>
                             )}

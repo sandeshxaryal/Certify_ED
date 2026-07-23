@@ -137,7 +137,6 @@ Frontend runs at `http://localhost:5173`, backend at `http://localhost:3000` by 
 The smart contract can be migrated to:
 - **development** — local Ganache (Docker or standalone)
 - **sepolia** — Ethereum Sepolia testnet
-- **mumbai** — Polygon Mumbai testnet
 - **polygon** — Polygon mainnet
 - **mainnet** — Ethereum mainnet
 
